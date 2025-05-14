@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Hub - Calendar</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                Student Hub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tasks"><i class="fas fa-tasks"></i> Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/notes"><i class="fas fa-sticky-note"></i> Notes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h1 class="mb-4">Calendar</h1>
+        
+        <!-- Calendar Controls -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <button id="prev-month" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h4 id="calendar-title" class="m-0">Month Year</h4>
+                            <button id="next-month" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <button id="today-btn" class="btn btn-secondary">Today</button>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-check-inline float-end">
+                            <input class="form-check-input" type="checkbox" id="filter-homework" value="homework" checked>
+                            <label class="form-check-label" for="filter-homework">Homework</label>
+                        </div>
+                        <div class="form-check form-check-inline float-end">
+                            <input class="form-check-input" type="checkbox" id="filter-assessment" value="assessment" checked>
+                            <label class="form-check-label" for="filter-assessment">Assessment</label>
+                        </div>
+                        <div class="form-check form-check-inline float-end">
+                            <input class="form-check-input" type="checkbox" id="filter-schedule" value="schedule" checked>
+                            <label class="form-check-label" for="filter-schedule">Schedule</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Calendar View -->
+        <div class="card">
+            <div class="card-body">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="weekday">Sunday</div>
+                        <div class="weekday">Monday</div>
+                        <div class="weekday">Tuesday</div>
+                        <div class="weekday">Wednesday</div>
+                        <div class="weekday">Thursday</div>
+                        <div class="weekday">Friday</div>
+                        <div class="weekday">Saturday</div>
+                    </div>
+                    <div id="calendar-grid" class="calendar-grid">
+                        <!-- Calendar days will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Task Details Modal -->
+        <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h5 id="detail-task-title"></h5>
+                        <div class="mb-3">
+                            <span id="detail-task-category" class="badge"></span>
+                            <span id="detail-task-priority" class="badge ms-2"></span>
+                        </div>
+                        <p id="detail-task-description" class="mb-3"></p>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Due Date: <span id="detail-task-due-date"></span></small>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detail-task-completed" disabled>
+                                <label class="form-check-label" for="detail-task-completed">
+                                    Completed
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="edit-task-btn">Edit Task</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Hub - Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <!-- CSS -->
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                Student Hub
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="fas fa-home"></i> Dashboard</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tasks"><i class="fas fa-tasks"></i> Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/notes"><i class="fas fa-sticky-note"></i> Notes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
+                    </li>
+                    <!-- 빈 공간을 위한 li (한 칸 띄우기) -->
+                    <li class="nav-item mx-3"></li>
+
+                    <!-- Sign In Button -->
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light ms-3" href="/signin">Sign In</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h1 class="mb-4">Welcome to Student Hub!</h1>
+        
+        <div class="row">
+            <!-- Task Statistics -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Task Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="task-progress mb-3">
+                            <h6>Overall Completion</h6>
+                            <div class="progress">
+                                <div id="overall-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small id="progress-text" class="text-muted">0/0 tasks completed</small>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-info bg-opacity-10">
+                                    <div class="card-body text-center">
+                                        <h3 id="homework-count">0</h3>
+                                        <p class="mb-0">Homework</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-danger bg-opacity-10">
+                                    <div class="card-body text-center">
+                                        <h3 id="assessment-count">0</h3>
+                                        <p class="mb-0">Assessments</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card bg-success bg-opacity-10">
+                                    <div class="card-body text-center">
+                                        <h3 id="schedule-count">0</h3>
+                                        <p class="mb-0">Schedule</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Tasks -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Upcoming Tasks</h5>
+                        <a href="/tasks" class="btn btn-sm btn-outline-secondary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <ul id="upcoming-tasks" class="list-group list-group-flush">
+                            <li class="list-group-item text-center text-muted">No upcoming tasks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Calendar Preview -->
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>This Week</h5>
+                        <a href="/calendar" class="btn btn-sm btn-outline-secondary">Full Calendar</a>
+                    </div>
+                    <div class="card-body">
+                        <div id="week-preview" class="mini-calendar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+/* General Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+/* Task Priority Colors */
+.priority-high {
+    border-left: 4px solid var(--bs-danger) !important;
+}
+
+.priority-medium {
+    border-left: 4px solid var(--bs-warning) !important;
+}
+
+.priority-low {
+    border-left: 4px solid var(--bs-success) !important;
+}
+
+/* Task Category Colors */
+.category-badge.homework {
+    background-color: var(--bs-info);
+}
+
+.category-badge.assessment {
+    background-color: var(--bs-danger);
+}
+
+.category-badge.schedule {
+    background-color: var(--bs-success);
+}
+
+/* Task Status */
+.task-item.completed {
+    opacity: 0.7;
+}
+
+.task-item.completed .task-title {
+    text-decoration: line-through;
+}
+
+
+/* Calendar Styles */
+.calendar-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.weekday {
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+    gap: 1px;
+    position: relative;
+    width: 100%;
+    transition: transform 0.3s ease-in-out;
+}
+
+.calendar-day {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 5px;
+    min-height: 120px;
+    position: relative;
+}
+
+.calendar-day.today {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.calendar-day.other-month {
+    opacity: 0.4;
+}
+
+.date-number {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.day-event {
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    margin-bottom: 2px;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.day-event.homework {
+    background-color: rgba(var(--bs-info-rgb), 0.3);
+}
+
+.day-event.assessment {
+    background-color: rgba(var(--bs-danger-rgb), 0.3);
+}
+
+.day-event.schedule {
+    background-color: rgba(var(--bs-success-rgb), 0.3);
+}
+
+/* Mini calendar in dashboard */
+.mini-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.mini-calendar .weekday {
+    font-size: 0.8rem;
+    padding: 5px;
+}
+
+.mini-calendar .day {
+    padding: 5px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.mini-calendar .day.today {
+    background-color: rgba(var(--bs-primary-rgb), 0.2);
+    font-weight: bold;
+}
+
+.mini-calendar .day.has-events::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+}
+
+.mini-calendar .day.has-events.homework::after {
+    background-color: var(--bs-info);
+}
+
+.mini-calendar .day.has-events.assessment::after {
+    background-color: var(--bs-danger);
+}
+
+.mini-calendar .day.has-events.schedule::after {
+    background-color: var(--bs-success);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .calendar-grid {
+        grid-auto-rows: minmax(80px, auto);
+    }
+    
+    .calendar-day {
+        min-height: 80px;
+    }
+    
+    .weekday {
+        font-size: 0.8rem;
+    }
+}
+
+/* Calendar Animation Styles */
+.calendar-grid.slide-left-out {
+    transform: translateX(-100%);
+}
+
+.calendar-grid.slide-right-out {
+    transform: translateX(100%);
+}
+
+.calendar-grid.clone {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+    gap: 1px;
+    background-color: var(--bs-dark);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1;
+}
+
+.calendar-grid.clone.slide-left-in {
+    transform: translateX(0);
+}
+
+.calendar-grid.clone.slide-right-in {
+    transform: translateX(0);
+}
+
+/* Remove the global animation override */
+* {
+    animation: none !important;
+}
+
+/* Remove the transition and transform overrides */
+.calendar-grid,
+.calendar-grid.clone {
+    animation: none !important;
+    transition: transform 0.3s ease-in-out !important;
+    transform: none !important;
+}
