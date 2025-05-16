@@ -60,6 +60,36 @@
             </div>
         </div>
 
+        <!-- Search Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="search-Notes" class="form-control" placeholder="Search Notes...">
+                    <button class="btn btn-outline-secondary" type="button" id="search-button">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task List -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Notes List</h5>
+            </div>
+            <div class="card-body">
+                <div id="tasks-container">
+                    <div class="list-group" id="task-list">
+                        <!-- Tasks will be dynamically loaded here -->
+                        <div id="empty-tasks" class="text-center p-4 text-muted">
+                            <h5>No notes found</h5>
+                            <p>Create a new note to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notes Grid -->
         <div class="row" id="notes-grid">
             <!-- Notes will be dynamically added here -->
