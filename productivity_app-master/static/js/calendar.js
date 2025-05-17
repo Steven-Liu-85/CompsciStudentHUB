@@ -18,34 +18,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize the calendar page
 function initCalendarPage() {
-    // Set current date
-    let currentDate = new Date();
-    
+    // Set current date (remove 'let')
+    currentDate = new Date();
+
     // Set up event listeners
     document.getElementById('prev-month').addEventListener('click', () => navigateMonth('prev'));
     document.getElementById('next-month').addEventListener('click', () => navigateMonth('next'));
-    
+
     document.getElementById('today-btn').addEventListener('click', () => {
         currentDate = new Date();
         renderCalendar(currentDate);
     });
-    
+
     // Category filter event listeners
     document.getElementById('filter-homework').addEventListener('change', () => renderCalendar(currentDate));
     document.getElementById('filter-assessment').addEventListener('change', () => renderCalendar(currentDate));
     document.getElementById('filter-schedule').addEventListener('change', () => renderCalendar(currentDate));
-    
+
     // Initial render
     renderCalendar(currentDate);
-    
+
     // Add event listener for edit task button in task details modal
     document.getElementById('edit-task-btn').addEventListener('click', () => {
         const taskId = document.getElementById('edit-task-btn').dataset.taskId;
-        
+
         // Close current modal
         const detailsModal = bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal'));
         detailsModal.hide();
-        
+
         // Open edit modal - need to wait for the first modal to close
         setTimeout(() => {
             openEditTaskModal(taskId);
@@ -318,7 +318,7 @@ function navigateMonth(direction) {
     }
     
     // Update the calendar title
-    updateCalendarTitle();
+    //updateCalendarTitle();
     
     // Force a reflow
     clone.offsetHeight;
@@ -333,6 +333,6 @@ function navigateMonth(direction) {
         clone.remove();
         calendarGrid.classList.remove('slide-left-out', 'slide-right-out');
         // Update calendar content
-        renderCalendar();
+        renderCalendar(currentDate); // Pass currentDate explicitly
     }, 300);
 }
