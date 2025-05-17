@@ -76,6 +76,8 @@ def google_auth():
 # Routes for rendering templates
 @app.route('/')
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for('signin'))
     return render_template('index.html')
 
 @app.route('/signup')
