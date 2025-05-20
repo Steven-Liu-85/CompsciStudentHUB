@@ -18,7 +18,7 @@ app.secret_key = os.urandom(24)  # Required for session management
 db = DBModule()
 
 # Initialize Firebase Admin
-cred = credentials.Certificate("/Users/liuhongcheng/Desktop/productivity_app-master/config/studentproductivityapp-b-block-firebase-adminsdk-fbsvc-59e82bf71b.json")
+cred = credentials.Certificate("/Users/liuhongcheng/Desktop/productivity_app-master/config/service_account_key.json")
 firebase_admin.initialize_app(cred)
 
 # Load Firebase Auth config
