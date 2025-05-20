@@ -6,6 +6,8 @@
     <title>Student Hub - Dashboard</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSS -->
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -25,25 +27,39 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/"><i class=""></i> Dashboard</a>
+                        <a class="nav-link active" href="/"><i class="fas fa-home"></i> Dashboard</a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="/tasks"><i class=""></i> Tasks</a>
+                        <a class="nav-link" href="/tasks"><i class="fas fa-tasks"></i> Tasks</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/notes"><i class=""></i> Notes</a>
+                        <a class="nav-link" href="/notes"><i class="fas fa-sticky-note"></i> Notes</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/calendar"><i class=""></i> Calendar</a>
+                        <a class="nav-link" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
                     </li>
                     <!-- 빈 공간을 위한 li (한 칸 띄우기) -->
                     <li class="nav-item mx-3"></li>
 
+                    {% if current_user.is_authenticated %}
+                    <!-- User Menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user"></i> {{ current_user.name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog"></i> Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
                     <!-- Sign In Button -->
                     <li class="nav-item">
                         <a class="btn btn-outline-light ms-3" href="/signin">Sign In</a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -62,7 +78,11 @@
                     </div>
                     <div class="card-body">
                         <div class="task-progress mb-3">
-                            <h6>Task Remaining</h6>
+                            <h6>Overall Completion</h6>
+                            <div class="progress">
+                                <div id="overall-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small id="progress-text" class="text-muted">0/0 tasks completed</small>
                         </div>
                         
                         <div class="row mt-4">
