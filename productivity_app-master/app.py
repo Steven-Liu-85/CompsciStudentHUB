@@ -4,6 +4,7 @@ import json
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_login import login_required, logout_user, current_user, login_user
 from flask_login import LoginManager, UserMixin
+import bcrypt 
 
 from db_handler import DBModule
 import firebase_admin
@@ -14,12 +15,12 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
 
-# Initialize Firebase
-db = DBModule()
-
-# Initialize Firebase Admin
-cred = credentials.Certificate("/Users/liuhongcheng/Desktop/productivity_app-master/config/service_account_key.json")
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate("config/service_account_key.json")
 firebase_admin.initialize_app(cred)
+
+# Initialize Firebase Realtime Database
+db = DBModule()
 
 # Load Firebase Auth config
 with open('config/firebase_auth.json', 'r') as f:
@@ -31,53 +32,25 @@ login_manager.init_app(app)
 login_manager.login_view = 'signin'
 
 class User(UserMixin):
-    def __init__(self, uid, email):
+
+    def __init__(self, uid, email, name=None):
         self.id = uid
         self.email = email
+        self.name = name or email.split('@')[0]  # Use email username if name not provided
 
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        user = auth.get_user(user_id)
-        return User(user.uid, user.email)
-    except:
-        return None
-
-@app.route('/api/auth/google', methods=['POST'])
-def google_auth():
-    try:
-        id_token = request.json.get('idToken')
-        if not id_token:
-            logging.error("No ID token provided")
-            return jsonify({"error": "No ID token provided"}), 400
-            
-        logging.debug(f"Received ID token: {id_token[:20]}...")
-        
-        decoded_token = auth.verify_id_token(id_token)
-        logging.debug(f"Decoded token: {decoded_token}")
-        
-        uid = decoded_token['uid']
-        email = decoded_token['email']
-        
-        user = User(uid, email)
-        login_user(user)
-        
-        return jsonify({
-            "message": "Login successful",
-            "user": {
-                "uid": uid,
-                "email": email
-            }
-        }), 200
+        user_data = db.db.child('users').child(user_id).get().val()
+        if user_data:
+            return User(user_id, user_data['email'], user_data['name'])
     except Exception as e:
-        logging.error(f"Error in Google Auth: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Authentication failed: {str(e)}"}), 401
+        print(f"Error loading user: {e}")
+        return None
 
 # Routes for rendering templates
 @app.route('/')
 def index():
-    if not current_user.is_authenticated:
-        return redirect(url_for('signin'))
     return render_template('index.html')
 
 @app.route('/signup')
@@ -90,7 +63,11 @@ def signup():
 def signin():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return render_template('signin.html', firebase_config=json.dumps(firebase_config))
+
+    # Load Firebase config
+    with open('config/firebase_auth.json', 'r') as f:
+        firebase_config = json.load(f)
+    return render_template('signin.html', firebase_config=firebase_config)
 
 @app.route('/dashboard')
 def dashboard():
@@ -311,6 +288,134 @@ def delete_calendar_event(event_id):
     except Exception as e:
         logging.error(f"Error deleting event: {e}")
         return jsonify({"error": "Failed to delete event"}), 500
+
+@app.route('/api/auth/signup', methods=['POST'])
+def local_signup():
+    try:
+        data = request.json
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+
+        existing_user = db.get_user_by_email(email)
+        if existing_user:
+            if existing_user.val().get('provider') != 'local':
+                return jsonify({"error": "Email already registered with another provider."}), 409
+            return jsonify({"error": "Email already registered."}), 409
+
+        success = db.register_local_user(name, email, password)
+        if success:
+            user = db.get_user_by_email(email)
+            if user:
+                user_obj = User(user.key(), email, name)
+                login_user(user_obj)
+    
+            return jsonify({"message": "User registered successfully."}), 200
+        return jsonify({"error": "Registration failed."}), 500
+
+    except Exception as e:
+        logging.error(f"Error in signup: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error."}), 500
+
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def local_login():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+
+        user = db.validate_local_login(email, password)
+        if user == "conflict":
+            return jsonify({"error": "Email registered via Google. Please use Google Login."}), 403
+        if not user:
+            return jsonify({"error": "Invalid email or password."}), 401
+
+        val = user.val()
+        uid = user.key()
+        name = val.get('name')
+
+        login_user(User(uid, email, name))
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "uid": uid,
+                "email": email,
+                "name": name
+            }
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error in login: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error."}), 500
+    
+@app.route('/profile')
+@login_required
+def profile():
+    user_data = db.db.child('users').child(current_user.id).get().val()
+    joined = user_data.get('created_at')
+    from datetime import datetime
+    joined_date = datetime.fromtimestamp(joined / 1000).strftime('%B %d, %Y') if joined else None
+    return render_template('profile.html', joined_date=joined_date)
+
+# API Routes for Google Authentication
+@app.route('/api/auth/google', methods=['POST'])
+def google_auth():
+    try:
+        id_token = request.json.get('idToken')
+        if not id_token:
+            logging.error("No ID token provided")
+            return jsonify({"error": "No ID token provided"}), 400
+            
+        logging.debug(f"Received ID token: {id_token[:20]}...")
+        
+        decoded_token = auth.verify_id_token(id_token)
+        logging.debug(f"Decoded token: {decoded_token}")
+        
+        uid = decoded_token['uid']
+        created_at = request.json.get('createdAt')
+        email = decoded_token['email']
+        name = decoded_token.get('name', email.split('@')[0])  # Use email username if name not provided
+        
+        # Save or update user in Firebase Realtime Database
+        user_data = {
+            'email': email,
+            'name': name,
+            'last_login': {'.sv': 'timestamp'},
+            'provider': 'google',
+            'created_at': created_at or {'.sv': 'timestamp'}
+        }
+        
+        # Check if user exists
+        existing_user = db.get_user_by_email(email)
+        
+        if existing_user:
+            # Update last login time for existing user
+            db.update_user(existing_user.key(), {'last_login': {'.sv': 'timestamp'}})
+            uid = existing_user.key()  # Use the existing user's key
+            logging.info(f"Updated existing user: {uid}")
+        else:
+            # Create new user
+            uid = db.create_user(user_data)
+            if not uid:
+                raise Exception("Failed to create new user")
+            logging.info(f"Created new user: {uid}")
+        
+        user = User(uid, email, name)
+        login_user(user)
+        
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "uid": uid,
+                "email": email,
+                "name": name
+            }
+        }), 200
+    except Exception as e:
+        logging.error(f"Error in Google Auth: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Authentication failed: {str(e)}"}), 401
 
 # Error handlers
 @app.errorhandler(404)

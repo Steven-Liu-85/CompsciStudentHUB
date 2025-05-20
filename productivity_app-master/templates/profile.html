@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Student Hub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .profile-container {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 30px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        .profile-title {
+            text-align: center;
+            color: var(--bs-light);
+            margin-bottom: 20px;
+        }
+        .profile-info p {
+            font-size: 1rem;
+            color: var(--bs-light);
+            margin-bottom: 8px;
+        }
+        .profile-info strong {
+            color: var(--bs-primary);
+        }
+        .btn-group-custom {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            color: var(--bs-light);
+            text-decoration: none;
+            font-size: 1rem;
+        }
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left me-1"></i>Back to Dashboard</a>
+
+    <div class="container">
+        <div class="profile-container">
+            <h2 class="profile-title"><i class="fas fa-user-circle me-2"></i>My Profile</h2>
+
+            <div class="profile-info">
+                <p><strong>Name:</strong> {{ current_user.name }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                <p><strong>Joined:</strong> {{ joined_date|default("Unknown") }}</p>
+            </div>
+
+            <div class="btn-group-custom">
+                <button class="btn btn-outline-primary" id="change-name-btn">Change Name</button>
+                <button class="btn btn-outline-secondary" id="change-email-btn" disabled>Change Email</button>
+                <button class="btn btn-outline-danger" id="change-password-btn">Change Password</button>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="text-center">
+                <button class="btn btn-outline-light" disabled>
+                    <i class="fas fa-adjust me-2"></i>Toggle Theme (coming soon)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- (Optional) Custom JS for profile later -->
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

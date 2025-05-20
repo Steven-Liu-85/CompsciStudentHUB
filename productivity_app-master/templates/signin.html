@@ -138,54 +138,57 @@
 
     <!-- Firebase Initialization -->
     <script>
-        try {
-            // Initialize Firebase
-            const app = firebase.initializeApp(firebaseConfig);
-            console.log('Firebase initialized successfully');
-            
-            // Google Sign In
-            document.getElementById('google-signin').addEventListener('click', async () => {
-                try {
-                    console.log('Starting Google sign-in process');
-                    const provider = new firebase.auth.GoogleAuthProvider();
-                    const result = await firebase.auth().signInWithPopup(provider);
-                    console.log('Google sign-in successful, getting ID token');
-                    
-                    const idToken = await result.user.getIdToken();
-                    console.log('ID token obtained, sending to backend');
-                    
-                    // Send token to backend
-                    const response = await fetch('/api/auth/google', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ idToken })
-                    });
-                    
-                    if (response.ok) {
-                        console.log('Backend authentication successful');
-                        window.location.href = '/dashboard';
-                    } else {
-                        const error = await response.json();
-                        console.error('Backend authentication failed:', error);
-                        document.getElementById('error-message').style.display = 'block';
-                        document.getElementById('error-message').textContent = error.error || 'Authentication failed';
-                    }
-                } catch (error) {
-                    console.error('Error during Google sign-in:', error);
-                    document.getElementById('error-message').style.display = 'block';
-                    document.getElementById('error-message').textContent = error.message || 'Authentication failed';
-                }
-            });
-        } catch (error) {
-            console.error('Error initializing Firebase:', error);
-            document.getElementById('error-message').style.display = 'block';
-            document.getElementById('error-message').textContent = 'Failed to initialize Firebase';
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            try {
+                const app = firebase.initializeApp(firebaseConfig);
+                console.log('Firebase initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Firebase:', error);
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = 'Failed to initialize Firebase: ' + error.message;
+            }
         }
+        
+        // Google Sign In
+        document.getElementById('google-signin').addEventListener('click', async () => {
+            try {
+                console.log('Starting Google sign-in process');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await firebase.auth().signInWithPopup(provider);
+                console.log('Google sign-in successful, getting ID token');
+                
+                const idToken = await result.user.getIdToken();
+                console.log('ID token obtained, sending to backend');
+                
+                // Send token to backend
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ idToken })
+                });
+                
+                if (response.ok) {
+                    console.log('Backend authentication successful');
+                    window.location.href = '/dashboard';
+                } else {
+                    const error = await response.json();
+                    console.error('Backend authentication failed:', error);
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('error-message').textContent = error.error || 'Authentication failed';
+                }
+            } catch (error) {
+                console.error('Error during Google sign-in:', error);
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message || 'Authentication failed';
+            }
+        });
     </script>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/signin.js') }}"></script>
 </body>
 </html> 
