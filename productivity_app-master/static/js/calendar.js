@@ -2,7 +2,7 @@
  * Calendar Management JavaScript
  * Handles calendar view and event display
  */
-
+let currentDate;
 // DOM Elements
 document.addEventListener('DOMContentLoaded', function() {
     // Check if we're on the calendar page
@@ -16,36 +16,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+
+// Initialize the calendar page
 // Initialize the calendar page
 function initCalendarPage() {
-    // Set current date
-    let currentDate = new Date();
-    
+    // Set current date (remove 'let')
+    currentDate = new Date();
+
     // Set up event listeners
     document.getElementById('prev-month').addEventListener('click', () => navigateMonth('prev'));
     document.getElementById('next-month').addEventListener('click', () => navigateMonth('next'));
-    
+
     document.getElementById('today-btn').addEventListener('click', () => {
         currentDate = new Date();
         renderCalendar(currentDate);
     });
-    
+
     // Category filter event listeners
     document.getElementById('filter-homework').addEventListener('change', () => renderCalendar(currentDate));
     document.getElementById('filter-assessment').addEventListener('change', () => renderCalendar(currentDate));
     document.getElementById('filter-schedule').addEventListener('change', () => renderCalendar(currentDate));
-    
+
     // Initial render
     renderCalendar(currentDate);
-    
+
     // Add event listener for edit task button in task details modal
     document.getElementById('edit-task-btn').addEventListener('click', () => {
         const taskId = document.getElementById('edit-task-btn').dataset.taskId;
-        
+
         // Close current modal
         const detailsModal = bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal'));
         detailsModal.hide();
-        
+
         // Open edit modal - need to wait for the first modal to close
         setTimeout(() => {
             openEditTaskModal(taskId);
@@ -57,46 +59,46 @@ function initCalendarPage() {
 function renderCalendar(date) {
     const calendarGrid = document.getElementById('calendar-grid');
     const calendarTitle = document.getElementById('calendar-title');
-    
+
     // Clear calendar grid
     calendarGrid.innerHTML = '';
-    
+
     // Set calendar title
     calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    
+
     // Get first day of month
     const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    
+
     // Get day of week for first day (0-6, 0 = Sunday)
     const firstDayOfWeek = firstDayOfMonth.getDay();
-    
+
     // Get last day of month
     const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
-    
+
     // Get current date for highlighting today
     const today = new Date();
     const isCurrentMonth = today.getMonth() === date.getMonth() && today.getFullYear() === date.getFullYear();
-    
+
     // Get previous month's days to display
     const prevMonth = new Date(date.getFullYear(), date.getMonth(), 0);
     const daysInPrevMonth = prevMonth.getDate();
-    
+
     // Get tasks from local storage
     const tasks = JSON.parse(localStorage.getItem('student-hub-tasks')) || [];
-    
+
     // Get checked categories
     const showHomework = document.getElementById('filter-homework').checked;
     const showAssessment = document.getElementById('filter-assessment').checked;
     const showSchedule = document.getElementById('filter-schedule').checked;
-    
+
     // Filter tasks by categories
     const filteredTasks = tasks.filter(task => {
-        return (task.category === 'homework' && showHomework) || 
-               (task.category === 'assessment' && showAssessment) || 
+        return (task.category === 'homework' && showHomework) ||
+               (task.category === 'assessment' && showAssessment) ||
                (task.category === 'schedule' && showSchedule);
     });
-    
+
     // Generate days for previous month (if needed)
     for (let i = 0; i < firstDayOfWeek; i++) {
         const dayNumber = daysInPrevMonth - firstDayOfWeek + i + 1;
@@ -318,21 +320,21 @@ function navigateMonth(direction) {
     }
     
     // Update the calendar title
-    updateCalendarTitle();
-    
+    // updateCalendarTitle(); // This function does not exist, can be removed if unnecessary
+
     // Force a reflow
     clone.offsetHeight;
-    
+
     // Add slide animation classes
     calendarGrid.classList.add(direction === 'prev' ? 'slide-left-out' : 'slide-right-out');
     clone.classList.add(direction === 'prev' ? 'slide-left-in' : 'slide-right-in');
-    
+
     // Wait for animation to complete
     setTimeout(() => {
         // Remove the clone and animation classes
         clone.remove();
         calendarGrid.classList.remove('slide-left-out', 'slide-right-out');
         // Update calendar content
-        renderCalendar();
+        renderCalendar(currentDate); // Pass currentDate explicitly
     }, 300);
 }

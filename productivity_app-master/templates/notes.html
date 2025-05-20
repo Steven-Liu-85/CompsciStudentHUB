@@ -35,6 +35,26 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
                     </li>
+                    <li class="nav-item mx-3"></li>
+
+                    {% if current_user.is_authenticated %}
+                    <!-- User Menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user"></i> {{ current_user.name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog"></i> Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <!-- Sign In Button -->
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light ms-3" href="/signin">Sign In</a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -44,7 +64,7 @@
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col">
-                <h1><i class="fas fa-sticky-note"></i> My Notes</h1>
+                <h1><i class=""></i> My Notes</h1>
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
@@ -53,10 +73,26 @@
             </div>
         </div>
 
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="search-tasks" class="form-control" placeholder="Search tasks...">
+                    <button class="btn btn-outline-secondary" type="button" id="search-button">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
         <!-- Notes Grid -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Notes List</h5>
+            </div>
+        </div>
         <div class="row" id="notes-grid">
             <!-- Notes will be dynamically added here -->
         </div>
+
     </div>
 
     <!-- Add Note Modal -->

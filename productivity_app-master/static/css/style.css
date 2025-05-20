@@ -225,3 +225,21 @@ body {
     transition: transform 0.3s ease-in-out !important;
     transform: none !important;
 }
+
+.calendar-nav-row {
+    gap: 16px; /* adjust as needed for perfect balance */
+}
+.calendar-title {
+    min-width: 120px;
+    text-align: center;
+    margin: 0 8px;
+    flex: 0 1 auto;
+}
+.calendar-nav-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
