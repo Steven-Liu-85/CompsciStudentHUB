@@ -7,6 +7,7 @@ from flask_login import LoginManager, UserMixin
 import bcrypt 
 
 from db_handler import DBModule
+from email_sender import EmailSender
 import firebase_admin
 from firebase_admin import credentials, auth
 
@@ -33,17 +34,23 @@ login_manager.login_view = 'signin'
 
 class User(UserMixin):
 
-    def __init__(self, uid, email, name=None):
+    def __init__(self, uid, email, name=None, provider='local'):
         self.id = uid
         self.email = email
         self.name = name or email.split('@')[0]  # Use email username if name not provided
+        self.provider = provider
 
 @login_manager.user_loader
 def load_user(user_id):
     try:
         user_data = db.db.child('users').child(user_id).get().val()
         if user_data:
-            return User(user_id, user_data['email'], user_data['name'])
+            return User(
+                user_id,
+                user_data['email'],
+                user_data.get('name'),
+                user_data.get('provider', 'local')  # ✅ 이 부분 추가
+            )
     except Exception as e:
         print(f"Error loading user: {e}")
         return None
@@ -307,7 +314,7 @@ def local_signup():
         if success:
             user = db.get_user_by_email(email)
             if user:
-                user_obj = User(user.key(), email, name)
+                user_obj = User(user.key(), email, val.get('name'), val.get('provider', 'local'))
                 login_user(user_obj)
     
             return jsonify({"message": "User registered successfully."}), 200
@@ -317,7 +324,138 @@ def local_signup():
         logging.error(f"Error in signup: {e}", exc_info=True)
         return jsonify({"error": "Internal server error."}), 500
 
+@app.route('/api/profile/change-name', methods=['POST'])
+@login_required
+def change_name():
+    try:
+        data = request.json
+        new_name = data.get('name')
 
+        if not new_name or len(new_name.strip()) == 0:
+            return jsonify({"error": "Name cannot be empty"}), 400
+
+        uid = current_user.id
+
+        # ✅ FIX: Pyrebase 방식으로 user_ref 접근
+        db.db.child("users").child(uid).update({"name": new_name.strip()})
+
+        # Flask-Login session 업데이트
+        current_user.name = new_name.strip()
+
+        return jsonify({"message": "Name updated successfully"}), 200
+
+    except Exception as e:
+        logging.error(f"Error changing name: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    
+@app.route('/api/profile/change-password', methods=['POST'])
+@login_required
+def change_password():
+    try:
+        data = request.json
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+
+        if not current_password or not new_password:
+            return jsonify({"error": "All fields are required"}), 400
+
+        # 사용자 데이터 가져오기
+        user_record = db.get_user_by_email(current_user.email)
+        if not user_record:
+            return jsonify({"error": "User not found"}), 404
+
+        user_data = user_record.val()
+        stored_hash = user_data.get('password')
+
+        if not stored_hash or not bcrypt.checkpw(current_password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return jsonify({"error": "Incorrect current password"}), 403
+
+        # 새 비밀번호 암호화 및 업데이트
+        new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        db.update_user(user_record.key(), { 'password': new_hash })
+
+        return jsonify({"message": "Password updated successfully"}), 200
+
+    except Exception as e:
+        logging.error(f"Error changing password: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    
+@app.route('/api/profile/request-email-change', methods=['POST'])
+@login_required
+def request_email_change():
+    try:
+        data = request.json
+        current_password = data.get('currentPassword')
+        new_email = data.get('email')
+
+        if not current_password or not new_email:
+            return jsonify({"error": "All fields are required"}), 400
+
+        # Step 1: Check password
+        user = db.get_user_by_email(current_user.email)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        user_val = user.val()
+        stored_hash = user_val.get('password')
+
+        if not stored_hash or not bcrypt.checkpw(current_password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return jsonify({"error": "Incorrect password"}), 403
+
+        # Step 2: Check if email is already in use
+        if db.get_user_by_email(new_email):
+            return jsonify({"error": "Email is already registered"}), 409
+
+        # Step 3: Generate verification code
+        import random
+        verification_code = str(random.randint(100000, 999999))
+
+        # Step 4: Store temporarily
+        session['pending_email_change'] = {
+            'code': verification_code,
+            'new_email': new_email
+        }
+
+        # Step 5: Send email using the class
+        sender = EmailSender()
+        sender.send_verification_code(new_email, verification_code)
+
+        return jsonify({"message": "Verification code sent"}), 200
+
+    except Exception as e:
+        logging.error(f"Error in request_email_change: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/profile/verify-email-code', methods=['POST'])
+@login_required
+def verify_email_code():
+    try:
+        data = request.json
+        input_code = data.get('verificationCode')
+
+        pending = session.get('pending_email_change')
+        if not pending:
+            return jsonify({"error": "No pending email change request"}), 400
+
+        if pending['code'] != input_code:
+            return jsonify({"error": "Invalid verification code"}), 403
+
+        # All good — update email in DB
+        new_email = pending['new_email']
+        user_record = db.get_user_by_email(current_user.email)
+        if not user_record:
+            return jsonify({"error": "User not found"}), 404
+
+        db.update_user(user_record.key(), {'email': new_email})
+
+        # Update current_user session
+        current_user.email = new_email
+        session.pop('pending_email_change', None)  # Clear temp
+
+        return jsonify({"message": "Email updated successfully."}), 200
+    except Exception as e:
+        logging.error(f"Error verifying email code: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
 def local_login():
@@ -335,8 +473,9 @@ def local_login():
         val = user.val()
         uid = user.key()
         name = val.get('name')
+        provider = val.get('provider', 'local')
 
-        login_user(User(uid, email, name))
+        login_user(User(uid, email, name, provider))
         return jsonify({
             "message": "Login successful",
             "user": {
@@ -402,7 +541,7 @@ def google_auth():
                 raise Exception("Failed to create new user")
             logging.info(f"Created new user: {uid}")
         
-        user = User(uid, email, name)
+        user = User(uid, email, name, provider='google')
         login_user(user)
         
         return jsonify({
