@@ -58,6 +58,13 @@ emailSignUpForm.addEventListener("submit", async (e) => {
 
     errorMessage.style.display = "none";
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>\/?`~\-])[A-Za-z\d!@#$%^&*()_+[\]{};':"\\|,.<>\/?`~\-]{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+        showError("Password must be at least 8 characters long and include a lowercase letter, a number, and a special character.");
+        return;
+    }
+
     if (password !== confirmPassword) {
         showError("Passwords do not match.");
         return;

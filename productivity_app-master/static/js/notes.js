@@ -1,287 +1,112 @@
-/**
- * Notes Management JavaScript
- * Handles note creation, editing, deletion, and display using localStorage
- */
+let notes = [];
 
-// Store notes in local storage
-let notes = JSON.parse(localStorage.getItem('student-hub-notes')) || [];
+async function fetchNotes() {
+  const res = await fetch('/api/notes');
+  const data = await res.json();
+  notes = data.notes || [];
+  updateTagFilter();
+  renderNotes();
+}
 
-// DOM Elements
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize notes page
-    if (document.getElementById('notes-grid')) {
-        initNotesPage();
-    }
-    
-    // Initialize add note functionality
-    const saveNoteBtn = document.getElementById('save-note-btn');
-    if (saveNoteBtn) {
-        saveNoteBtn.addEventListener('click', saveNote);
-    }
-    
-    // Initialize edit note functionality
-    const updateNoteBtn = document.getElementById('update-note-btn');
-    if (updateNoteBtn) {
-        updateNoteBtn.addEventListener('click', updateNote);
-    }
-    
-    // Initialize delete note functionality
-    const deleteNoteBtn = document.getElementById('delete-note-btn');
-    if (deleteNoteBtn) {
-        deleteNoteBtn.addEventListener('click', deleteNote);
-    }
+document.addEventListener('DOMContentLoaded', () => {
+  fetchNotes();
+  document.getElementById('add-note-btn').addEventListener('click', () => openModal());
+  document.getElementById('note-search').addEventListener('input', renderNotes);
+  document.getElementById('note-sort').addEventListener('change', renderNotes);
+  document.getElementById('tag-filter').addEventListener('change', renderNotes);
+  document.getElementById('save-note-btn').addEventListener('click', handleSave);
+  document.getElementById('delete-note-btn').addEventListener('click', handleDelete);
 });
 
-// Initialize the notes page
-function initNotesPage() {
-    renderNotes();
+function updateTagFilter() {
+  const select = document.getElementById('tag-filter');
+  const tags = Array.from(new Set(notes.flatMap(n => n.tags || []))).sort();
+  select.innerHTML = '<option value="">All Tags</option>' + tags.map(t => `<option value="${t}">${t}</option>`).join('');
 }
 
-// Render all notes
 function renderNotes() {
-    const notesGrid = document.getElementById('notes-grid');
-    notesGrid.innerHTML = '';
-    
-    notes.forEach(note => {
-        const noteCard = createNoteCard(note);
-        notesGrid.appendChild(noteCard);
-    });
+  const grid = document.getElementById('notes-grid');
+  const search = document.getElementById('note-search').value.toLowerCase();
+  const sortBy = document.getElementById('note-sort').value;
+  const tagFilter = document.getElementById('tag-filter').value;
+
+  let filtered = notes.filter(n =>
+    (n.title.toLowerCase() + ' ' + n.content.toLowerCase()).includes(search) &&
+    (tagFilter === '' || (n.tags || []).includes(tagFilter))
+  );
+
+  if (sortBy === 'title') filtered.sort((a,b)=>a.title.localeCompare(b.title));
+  else if (sortBy === 'category') filtered.sort((a,b)=>a.category.localeCompare(b.category));
+  else if (sortBy === 'pinned') filtered.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+  else filtered.sort((a,b)=>new Date(b.updatedAt||b.createdAt) - new Date(a.updatedAt||a.createdAt));
+
+  grid.innerHTML = '';
+  filtered.forEach(n => grid.appendChild(createCard(n)));
 }
 
-// Create a note card element
-function createNoteCard(note) {
-    const col = document.createElement('div');
-    col.className = 'col-md-4 mb-4';
-    
-    const card = document.createElement('div');
-    card.className = 'card h-100';
-    
-    // Set card color based on category
-    const categoryColors = {
-        'lecture': 'bg-info bg-opacity-10',
-        'assignment': 'bg-warning bg-opacity-10',
-        'study': 'bg-success bg-opacity-10',
-        'other': 'bg-secondary bg-opacity-10'
-    };
-    card.classList.add(categoryColors[note.category] || 'bg-secondary bg-opacity-10');
-    
-    card.innerHTML = `
-        <div class="card-header">
-            <h5 class="card-title mb-0">${note.title}</h5>
-        </div>
-        <div class="card-body">
-            <p class="card-text">${note.content.substring(0, 150)}${note.content.length > 150 ? '...' : ''}</p>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="badge bg-${getCategoryColor(note.category)}">${note.category}</span>
-                <small class="text-muted">${new Date(note.createdAt).toLocaleDateString()}</small>
-            </div>
-        </div>
-        <div class="card-footer">
-            <button class="btn btn-sm btn-outline-primary edit-note-btn" data-note-id="${note.id}">
-                <i class="fas fa-edit"></i> Edit
-            </button>
-        </div>
-    `;
-    
-    // Add edit button event listener
-    const editBtn = card.querySelector('.edit-note-btn');
-    editBtn.addEventListener('click', () => openEditNoteModal(note.id));
-    
-    col.appendChild(card);
-    return col;
+function createCard(note) {
+  const col = document.createElement('div');
+  col.className = 'col-md-4 mb-3';
+  const div = document.createElement('div');
+  div.className = 'card h-100 d-flex flex-column justify-content-between';
+  div.style.cursor = 'pointer';
+  const catColors = { lecture:'info',assignment:'warning',study:'success',other:'secondary' };
+
+  div.innerHTML = `
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 text-truncate" title="${note.title}">${note.title}</h5>
+      ${note.pinned ? '<i class="fas fa-thumbtack text-warning"></i>' : ''}
+    </div>
+    <div class="card-body overflow-hidden">
+      <div class="card-text" style="max-height:4.5em; overflow:hidden;">${marked.parseInline(note.content.length>150 ? note.content.slice(0,150)+'...' : note.content)}</div>
+      <div class="mt-2">${(note.tags||[]).map(t=>`<span class="badge bg-light text-dark me-1">#${t}</span>`).join('')}</div>
+    </div>
+    <div class="card-footer text-muted">${note.category}</div>
+  `;
+  div.addEventListener('click', () => openModal(note));
+  col.appendChild(div);
+  return col;
 }
 
-// Get category color for badge
-function getCategoryColor(category) {
-    const colors = {
-        'lecture': 'info',
-        'assignment': 'warning',
-        'study': 'success',
-        'other': 'secondary'
-    };
-    return colors[category] || 'secondary';
+function openModal(note={}) {
+  const modalEl = document.getElementById('noteModal');
+  const modal = new bootstrap.Modal(modalEl);
+  document.getElementById('modal-title').textContent = note.id ? 'Edit Note' : 'New Note';
+  document.getElementById('note-id').value = note.id || '';
+  document.getElementById('note-title').value = note.title || '';
+  document.getElementById('note-content').value = note.content || '';
+  document.getElementById('note-category').value = note.category || 'lecture';
+  document.getElementById('note-tags').value = (note.tags||[]).join(', ');
+  document.getElementById('note-pinned').checked = !!note.pinned;
+  document.getElementById('delete-note-btn').style.display = note.id ? 'inline-block' : 'none';
+  modal.show();
 }
 
-// Create a new note
-function saveNote() {
-    const title = document.getElementById('note-title').value.trim();
-    const content = document.getElementById('note-content').value.trim();
-    const category = document.getElementById('note-category').value;
-    
-    // Validate form
-    if (!title || !content) {
-        alert('Please fill in all required fields');
-        return;
-    }
-    
-    // Create note object
-    const note = {
-        id: Date.now().toString(),
-        title,
-        content,
-        category,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    // Add to notes array
-    notes.push(note);
-    
-    // Save to local storage
-    localStorage.setItem('student-hub-notes', JSON.stringify(notes));
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('addNoteModal'));
-    modal.hide();
-    
-    // Reset form
-    document.getElementById('note-form').reset();
-    
-    // Render notes
-    renderNotes();
-    
-    showNotification("Note created successfully", "success");
+function collect() {
+  return {
+    title: document.getElementById('note-title').value.trim(),
+    content: document.getElementById('note-content').value.trim(),
+    category: document.getElementById('note-category').value,
+    tags: document.getElementById('note-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    pinned: document.getElementById('note-pinned').checked
+  };
 }
 
-// Open edit note modal
-function openEditNoteModal(noteId) {
-    const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-    
-    // Populate form
-    document.getElementById('edit-note-id').value = note.id;
-    document.getElementById('edit-note-title').value = note.title;
-    document.getElementById('edit-note-content').value = note.content;
-    document.getElementById('edit-note-category').value = note.category;
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('editNoteModal'));
-    modal.show();
+async function handleSave() {
+  const id = document.getElementById('note-id').value;
+  const payload = collect();
+  if(!payload.title||!payload.content) return alert('Title and content required');
+  const url = id? `/api/notes/${id}` : '/api/notes';
+  const method = id? 'PUT':'POST';
+  const res = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  if(res.ok) { document.querySelector('#noteModal .btn-close').click(); fetchNotes(); }
+  else alert('Save failed');
 }
 
-// Update an existing note
-function updateNote() {
-    const noteId = document.getElementById('edit-note-id').value;
-    const noteIndex = notes.findIndex(n => n.id === noteId);
-    
-    if (noteIndex === -1) return;
-    
-    const title = document.getElementById('edit-note-title').value.trim();
-    const content = document.getElementById('edit-note-content').value.trim();
-    const category = document.getElementById('edit-note-category').value;
-    
-    // Validate form
-    if (!title || !content) {
-        alert('Please fill in all required fields');
-        return;
-    }
-    
-    // Update note
-    notes[noteIndex] = {
-        ...notes[noteIndex],
-        title,
-        content,
-        category,
-        updatedAt: new Date().toISOString()
-    };
-    
-    // Save to local storage
-    localStorage.setItem('student-hub-notes', JSON.stringify(notes));
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('editNoteModal'));
-    modal.hide();
-    
-    // Render notes
-    renderNotes();
-    
-    showNotification("Note updated successfully", "success");
+async function handleDelete() {
+  const id = document.getElementById('note-id').value;
+  if(!id||!confirm('Delete this note?')) return;
+  const res = await fetch(`/api/notes/${id}`, {method:'DELETE'});
+  if(res.ok) { document.querySelector('#noteModal .btn-close').click(); fetchNotes(); }
+  else alert('Delete failed');
 }
-
-// Delete a note
-function deleteNote() {
-    const noteId = document.getElementById('edit-note-id').value;
-    
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this note?')) {
-        return;
-    }
-    
-    // Remove note from array
-    notes = notes.filter(n => n.id !== noteId);
-    
-    // Save to local storage
-    localStorage.setItem('student-hub-notes', JSON.stringify(notes));
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('editNoteModal'));
-    modal.hide();
-    
-    // Render notes
-    renderNotes();
-    
-    showNotification("Note deleted successfully", "success");
-}
-
-// Show notification
-function showNotification(message, type = 'info') {
-    // Create notification container if it doesn't exist
-    let notificationContainer = document.getElementById('notification-container');
-    
-    if (!notificationContainer) {
-        notificationContainer = document.createElement('div');
-        notificationContainer.id = 'notification-container';
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.top = '20px';
-        notificationContainer.style.right = '20px';
-        notificationContainer.style.zIndex = '1050';
-        document.body.appendChild(notificationContainer);
-    }
-    
-    // Create toast element
-    const toastId = 'toast-' + Date.now();
-    const toast = document.createElement('div');
-    toast.id = toastId;
-    toast.classList.add('toast', 'show');
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    // Set background color based on type
-    let bgClass = 'bg-primary';
-    switch(type) {
-        case 'success':
-            bgClass = 'bg-success';
-            break;
-        case 'warning':
-            bgClass = 'bg-warning';
-            break;
-        case 'error':
-            bgClass = 'bg-danger';
-            break;
-        case 'info':
-            bgClass = 'bg-info';
-            break;
-    }
-    
-    toast.classList.add(bgClass, 'text-white');
-    
-    // Set toast content
-    toast.innerHTML = `
-        <div class="toast-header">
-            <strong class="me-auto">Student Hub</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body">
-            ${message}
-        </div>
-    `;
-    
-    // Add to container
-    notificationContainer.appendChild(toast);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-} 
