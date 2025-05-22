@@ -55,11 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const current = currentPw.value.trim();
             const newPass = newPw.value.trim();
 
+            const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+
             if (!current || !newPass) {
                 pwError.textContent = "Please fill in all fields.";
                 pwError.classList.remove('d-none');
                 return;
             }
+            
+            if (!passwordRegex.test(newPass)) {
+                            pwError.textContent = "Password must be at least 8 characters long and include a lowercase letter, a number, and a special character.";
+                            pwError.classList.remove('d-none');
+                            return;
+                        }
 
             try {
                 const res = await fetch('/api/profile/change-password', {
@@ -83,6 +91,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ---------- Delete Account ----------
+    const deleteForm = document.getElementById('delete-account-form');
+    const deletePassword = document.getElementById('confirm-password-delete');
+    const deleteSuccess = document.getElementById('delete-account-success');
+    const deleteError = document.getElementById('delete-account-error');
+
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            deleteSuccess.classList.add('d-none');
+            deleteError.classList.add('d-none');
+
+            const password = deletePassword.value.trim();
+            if (!password) {
+                deleteError.textContent = "Please enter your password.";
+                deleteError.classList.remove('d-none');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/profile/delete-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    deleteSuccess.classList.remove('d-none');
+                    deleteForm.reset();
+                    setTimeout(() => {
+                        window.location.href = '/goodbye';
+                    }, 2000);
+                } else {
+                    deleteError.textContent = data.error || "Failed to delete account.";
+                    deleteError.classList.remove('d-none');
+                }
+            } catch (err) {
+                deleteError.textContent = "Unexpected error occurred.";
+                deleteError.classList.remove('d-none');
+            }
+        });
+    }
+    
     // ---------- Request Email Verification Code ----------
     const emailRequestForm = document.getElementById('request-email-change-form');
     const emailInput = document.getElementById('new-email');

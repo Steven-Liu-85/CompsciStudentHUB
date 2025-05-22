@@ -8,7 +8,6 @@
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS -->
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -29,7 +28,6 @@
                     <li class="nav-item">
                         <a class="nav-link active" href="/"><i class="fas fa-home"></i> Dashboard</a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link" href="/tasks"><i class="fas fa-tasks"></i> Tasks</a>
                     </li>
@@ -39,11 +37,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
                     </li>
-                    <!-- 빈 공간을 위한 li (한 칸 띄우기) -->
                     <li class="nav-item mx-3"></li>
 
                     {% if current_user.is_authenticated %}
-                    <!-- User Menu -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user"></i> {{ current_user.name }}
@@ -55,7 +51,6 @@
                         </ul>
                     </li>
                     {% else %}
-                    <!-- Sign In Button -->
                     <li class="nav-item">
                         <a class="btn btn-outline-light ms-3" href="/signin">Sign In</a>
                     </li>
@@ -68,7 +63,7 @@
     <!-- Main Content -->
     <div class="container mt-4">
         <h1 class="mb-4">Welcome to Student Hub!</h1>
-        
+
         <div class="row">
             <!-- Task Statistics -->
             <div class="col-md-6 mb-4">
@@ -77,6 +72,15 @@
                         <h5>Tasks Progress</h5>
                     </div>
                     <div class="card-body">
+
+                        <!-- ✅ Added Progress Bar -->
+                        <div class="mb-3">
+                            <div class="progress" role="progressbar" aria-label="Overall progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar" id="overall-progress" style="width: 0%"></div>
+                            </div>
+                            <p class="mt-2 mb-0 text-center" id="progress-text">0/0 tasks completed</p>
+                        </div>
+
                         <h6>Need to complete:</h6>
                         <div class="row mt-4">
                             <div class="col-md-4 mb-3">
@@ -107,7 +111,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Upcoming Tasks -->
             <div class="col-md-6 mb-4">
                 <div class="card">
@@ -123,9 +127,9 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- Calendar Preview -->
         <div class="row">
-            <!-- Calendar Preview -->
             <div class="col-md-12 mb-4">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">

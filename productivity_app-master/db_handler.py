@@ -93,6 +93,14 @@ class DBModule:
         except Exception as e:
             print(f"Error validating local login: {e}")
             return None
+        
+    def delete_user(self, uid):
+        try:
+            self.db.child("users").child(uid).remove()
+            return True
+        except Exception as e:
+            print(f"Error deleting user: {e}")
+            return False
 
     # Placeholders for future features
     def write_post(self):

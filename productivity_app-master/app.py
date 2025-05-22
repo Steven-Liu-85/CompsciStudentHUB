@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import re
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_login import login_required, logout_user, current_user, login_user
 from flask_login import LoginManager, UserMixin
@@ -118,7 +119,7 @@ def register_user():
 @login_required
 def get_tasks():
     try:
-        tasks_ref = db.child('users').child(current_user.id).child('tasks')
+        tasks_ref = db.db.child('users').child(current_user.id).child('tasks')
         tasks = tasks_ref.get().val()
         return jsonify({
             "tasks": [{"id": task_id, **task} for task_id, task in tasks.items()]
@@ -135,7 +136,7 @@ def create_task():
         data['created_at'] = {'.sv': 'timestamp'}
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        task_ref = db.child('users').child(current_user.id).child('tasks').push(data)
+        task_ref = db.db.child('users').child(current_user.id).child('tasks').push(data)
         
         return jsonify({
             "message": "Task created successfully",
@@ -152,7 +153,7 @@ def update_task(task_id):
         data = request.json
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        task_ref = db.child('users').child(current_user.id).child('tasks').child(task_id)
+        task_ref = db.db.child('users').child(current_user.id).child('tasks').child(task_id)
         task_ref.update(data)
         
         return jsonify({
@@ -167,7 +168,7 @@ def update_task(task_id):
 @login_required
 def delete_task(task_id):
     try:
-        task_ref = db.child('users').child(current_user.id).child('tasks').child(task_id)
+        task_ref = db.db.child('users').child(current_user.id).child('tasks').child(task_id)
         task_ref.remove()
         return jsonify({"message": "Task deleted successfully"})
     except Exception as e:
@@ -179,7 +180,7 @@ def delete_task(task_id):
 @login_required
 def get_notes():
     try:
-        notes_ref = db.child('users').child(current_user.id).child('notes')
+        notes_ref = db.db.child('users').child(current_user.id).child('notes')
         notes = notes_ref.get().val()
         return jsonify({
             "notes": [{"id": note_id, **note} for note_id, note in notes.items()]
@@ -193,10 +194,12 @@ def get_notes():
 def create_note():
     try:
         data = request.json
+        data.setdefault('tags', [])
+        data.setdefault('pinned', False)
         data['created_at'] = {'.sv': 'timestamp'}
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        note_ref = db.child('users').child(current_user.id).child('notes').push(data)
+        note_ref = db.db.child('users').child(current_user.id).child('notes').push(data)
         
         return jsonify({
             "message": "Note created successfully",
@@ -213,7 +216,7 @@ def update_note(note_id):
         data = request.json
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        note_ref = db.child('users').child(current_user.id).child('notes').child(note_id)
+        note_ref = db.db.child('users').child(current_user.id).child('notes').child(note_id)
         note_ref.update(data)
         
         return jsonify({
@@ -228,7 +231,7 @@ def update_note(note_id):
 @login_required
 def delete_note(note_id):
     try:
-        note_ref = db.child('users').child(current_user.id).child('notes').child(note_id)
+        note_ref = db.db.child('users').child(current_user.id).child('notes').child(note_id)
         note_ref.remove()
         return jsonify({"message": "Note deleted successfully"})
     except Exception as e:
@@ -240,7 +243,7 @@ def delete_note(note_id):
 @login_required
 def get_calendar_events():
     try:
-        events_ref = db.child('users').child(current_user.id).child('events')
+        events_ref = db.db.child('users').child(current_user.id).child('events')
         events = events_ref.get().val()
         return jsonify({
             "events": [{"id": event_id, **event} for event_id, event in events.items()]
@@ -257,7 +260,7 @@ def create_calendar_event():
         data['created_at'] = {'.sv': 'timestamp'}
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        event_ref = db.child('users').child(current_user.id).child('events').push(data)
+        event_ref = db.db.child('users').child(current_user.id).child('events').push(data)
         
         return jsonify({
             "message": "Event created successfully",
@@ -274,7 +277,7 @@ def update_calendar_event(event_id):
         data = request.json
         data['updated_at'] = {'.sv': 'timestamp'}
         
-        event_ref = db.child('users').child(current_user.id).child('events').child(event_id)
+        event_ref = db.db.child('users').child(current_user.id).child('events').child(event_id)
         event_ref.update(data)
         
         return jsonify({
@@ -289,7 +292,7 @@ def update_calendar_event(event_id):
 @login_required
 def delete_calendar_event(event_id):
     try:
-        event_ref = db.child('users').child(current_user.id).child('events').child(event_id)
+        event_ref = db.db.child('users').child(current_user.id).child('events').child(event_id)
         event_ref.remove()
         return jsonify({"message": "Event deleted successfully"})
     except Exception as e:
@@ -314,6 +317,7 @@ def local_signup():
         if success:
             user = db.get_user_by_email(email)
             if user:
+                val = user.val()
                 user_obj = User(user.key(), email, val.get('name'), val.get('provider', 'local'))
                 login_user(user_obj)
     
@@ -355,6 +359,13 @@ def change_password():
         data = request.json
         current_password = data.get('currentPassword')
         new_password = data.get('newPassword')
+
+        def is_valid_password(password):
+            pattern = r"^(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$"
+            return re.match(pattern, password)
+
+        if not is_valid_password(new_password):
+            return jsonify({"error": "Password must be at least 8 characters and include a letter, a number, and a special character."})
 
         if not current_password or not new_password:
             return jsonify({"error": "All fields are required"}), 400
@@ -456,6 +467,40 @@ def verify_email_code():
     except Exception as e:
         logging.error(f"Error verifying email code: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/api/profile/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    try:
+        data = request.json
+        password = data.get('password')
+
+        if not password:
+            return jsonify({"error": "Password is required"}), 400
+
+        user_record = db.get_user_by_email(current_user.email)
+        if not user_record:
+            return jsonify({"error": "User not found"}), 404
+
+        user_data = user_record.val()
+        stored_hash = user_data.get('password')
+
+        if not stored_hash or not bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return jsonify({"error": "Incorrect password"}), 403
+
+        # 실제 삭제 실행
+        db.delete_user(user_record.key())
+        logout_user()
+
+        return jsonify({"message": "Account deleted successfully"}), 200
+
+    except Exception as e:
+        logging.error(f"Error deleting account: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/goodbye')
+def goodbye():
+    return render_template('goodbye.html')
 
 @app.route('/api/auth/login', methods=['POST'])
 def local_login():
