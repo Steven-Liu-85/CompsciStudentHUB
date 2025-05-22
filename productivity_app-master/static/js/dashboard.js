@@ -2,7 +2,7 @@
  * Dashboard JavaScript
  * Handles dashboard statistics and summaries
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Only run if we're on the dashboard page
     if (document.getElementById('overall-progress')) {
         fetchTasksAndUpdateDashboard();
@@ -31,14 +31,38 @@ function fetchTasksAndUpdateDashboard() {
         });
 }
 
-// Update every dashbord thing
+// Update entire dashboard
 function updateDashboard() {
     updateTaskStats();
     updateUpcomingTasks();
 }
 
-// Update tasks
-// Update tasks
+// New: Compute task stats
+function getTaskStats() {
+    const tasks = typeof window.tasks !== 'undefined'
+        ? window.tasks
+        : (JSON.parse(localStorage.getItem('student-hub-tasks')) || []);
+
+    const total = tasks.length;
+    const completed = tasks.filter(task => task.completed).length;
+
+    const homework = tasks.filter(task => task.category === 'homework' && !task.completed).length;
+    const assessment = tasks.filter(task => task.category === 'assessment' && !task.completed).length;
+    const schedule = tasks.filter(task => task.category === 'schedule' && !task.completed).length;
+
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return {
+        total,
+        completed,
+        homework,
+        assessment,
+        schedule,
+        completionRate
+    };
+}
+
+// Update progress bar and counts
 function updateTaskStats() {
     const stats = getTaskStats();
     const progressBar = document.getElementById('overall-progress');
@@ -51,7 +75,7 @@ function updateTaskStats() {
     document.getElementById('schedule-count').textContent = stats.schedule;
 }
 
-// Update upcoming tasks
+// Show upcoming tasks
 function updateUpcomingTasks() {
     const upcomingTasksList = document.getElementById('upcoming-tasks');
     const upcomingTasks = getUpcomingTasks(5);
@@ -90,7 +114,7 @@ function updateUpcomingTasks() {
     });
 }
 
-// Get upcoming tasks (for dashboard)
+// Get upcoming tasks
 function getUpcomingTasks(limit = 5) {
     const now = new Date();
     const taskArr = typeof window.tasks !== 'undefined'
@@ -101,6 +125,3 @@ function getUpcomingTasks(limit = 5) {
         .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
         .slice(0, limit);
 }
-
-
-
