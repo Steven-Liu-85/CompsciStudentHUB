@@ -77,35 +77,49 @@
                         <h5>Tasks Progress</h5>
                     </div>
                     <div class="card-body">
-                        <h6>Need to complete:</h6>
-                        <div class="row mt-4">
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-info bg-opacity-10">
-                                    <div class="card-body text-center">
-                                        <h3 id="homework-count">0</h3>
-                                        <p class="mb-0">Homework</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-danger bg-opacity-10">
-                                    <div class="card-body text-center">
-                                        <h3 id="assessment-count">0</h3>
-                                        <p class="mb-0">Assessments</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-success bg-opacity-10">
-                                    <div class="card-body text-center">
-                                        <h3 id="schedule-count">0</h3>
-                                        <p class="mb-0">Schedule</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Progress Bar Patch Start -->
+    <div class="progress mb-2">
+        <div
+            id="overall-progress"
+            class="progress-bar"
+            role="progressbar"
+            style="width: 0%;"
+            aria-valuenow="0"
+            aria-valuemin="0"
+            aria-valuemax="100"
+        ></div>
+    </div>
+    <span id="progress-text" class="small text-muted"></span>
+    <!-- Progress Bar Patch End -->
+
+    <h6>Need to complete:</h6>
+    <div class="row mt-4">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info bg-opacity-10">
+                <div class="card-body text-center">
+                    <h3 id="homework-count">0</h3>
+                    <p class="mb-0">Homework</p>
                 </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-danger bg-opacity-10">
+                <div class="card-body text-center">
+                    <h3 id="assessment-count">0</h3>
+                    <p class="mb-0">Assessments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success bg-opacity-10">
+                <div class="card-body text-center">
+                    <h3 id="schedule-count">0</h3>
+                    <p class="mb-0">Schedule</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
             
             <!-- Upcoming Tasks -->
