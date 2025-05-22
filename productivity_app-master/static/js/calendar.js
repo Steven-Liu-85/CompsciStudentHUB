@@ -1,227 +1,340 @@
-// ✅ FINALIZED calendar.js (Mon-Sun, API tasks, animation, filter, edit, done-checkbox, modal)
-
-let currentDate = new Date();
-let tasks = [];
-
-document.addEventListener('DOMContentLoaded', async () => {
-  if (document.getElementById('calendar-grid')) {
-    await fetchTasksFromServer();
-    initCalendarPage();
-  }
-  if (document.getElementById('week-preview')) {
-    await fetchTasksFromServer();
-    initWeekPreview();
-  }
+/**
+ * Calendar Management JavaScript
+ * Handles calendar view and event display
+ */
+let currentDate;
+// DOM Elements
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on the calendar page
+    if (document.getElementById('calendar-grid')) {
+        initCalendarPage();
+    }
+    
+    // Check if we're on the dashboard with week preview
+    if (document.getElementById('week-preview')) {
+        initWeekPreview();
+    }
 });
 
-async function fetchTasksFromServer() {
-  try {
-    const response = await fetch('/api/tasks');
-    if (response.ok) {
-      const data = await response.json();
-      tasks = data.tasks || [];
-      localStorage.setItem('student-hub-tasks', JSON.stringify(tasks));
-    } else {
-      tasks = [];
-    }
-  } catch {
-    tasks = [];
-  }
-}
 
-function renderWeekdaysHeader() {
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const calendarHeader = document.querySelector('.calendar-header');
-  calendarHeader.innerHTML = '';
-  weekdays.forEach(day => {
-    const div = document.createElement('div');
-    div.className = 'weekday';
-    div.textContent = day;
-    calendarHeader.appendChild(div);
-  });
-}
-
+// Initialize the calendar page
+// Initialize the calendar page
 function initCalendarPage() {
-  document.getElementById('prev-month').addEventListener('click', () => navigateMonth('prev'));
-  document.getElementById('next-month').addEventListener('click', () => navigateMonth('next'));
-  document.getElementById('today-btn').addEventListener('click', () => {
+    // Set current date (remove 'let')
     currentDate = new Date();
-    renderCalendar(currentDate);
-  });
 
-  ['homework', 'assessment', 'schedule'].forEach(cat => {
-    document.getElementById(`filter-${cat}`).addEventListener('change', () => renderCalendar(currentDate));
-  });
+    // Set up event listeners
+    document.getElementById('prev-month').addEventListener('click', () => navigateMonth('prev'));
+    document.getElementById('next-month').addEventListener('click', () => navigateMonth('next'));
 
-  document.getElementById('edit-task-btn').addEventListener('click', () => {
-    const taskId = document.getElementById('edit-task-btn').dataset.taskId;
-    bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal')).hide();
-    setTimeout(() => openEditTaskModal(taskId), 500);
-  });
-
-  renderCalendar(currentDate);
-}
-
-function renderCalendar(date) {
-  renderWeekdaysHeader();
-  const grid = document.getElementById('calendar-grid');
-  grid.innerHTML = '';
-
-  document.getElementById('calendar-title').textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-
-  let firstWeekday = firstDay.getDay();
-  firstWeekday = firstWeekday === 0 ? 6 : firstWeekday - 1;
-
-  const today = new Date();
-  const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-
-  const show = ['homework', 'assessment', 'schedule'].filter(cat => document.getElementById(`filter-${cat}`).checked);
-  const filtered = tasks.filter(t => show.includes(t.category));
-
-  const prevMonthDays = new Date(year, month, 0).getDate();
-  for (let i = 0; i < firstWeekday; i++) {
-    const dayNum = prevMonthDays - firstWeekday + i + 1;
-    fillDay(dayNum, new Date(year, month - 1, dayNum), 'other-month');
-  }
-
-  for (let i = 1; i <= daysInMonth; i++) {
-    fillDay(i, new Date(year, month, i), isCurrentMonth && today.getDate() === i ? 'today' : '');
-  }
-
-  const total = firstWeekday + daysInMonth;
-  for (let i = 1; i <= 42 - total; i++) {
-    fillDay(i, new Date(year, month + 1, i), 'other-month');
-  }
-
-  function fillDay(num, dateObj, className) {
-    const events = getEventsForDay(filtered, dateObj);
-    grid.appendChild(createDayElement(num, dateObj, className, events));
-  }
-}
-
-function createDayElement(dayNum, date, extraClass = '', events = []) {
-  const day = document.createElement('div');
-  day.className = `calendar-day ${extraClass}`;
-
-  const num = document.createElement('div');
-  num.className = 'date-number';
-  num.textContent = dayNum;
-  day.appendChild(num);
-
-  if (events.length) {
-    const container = document.createElement('div');
-    container.className = 'day-events';
-
-    events.forEach(event => {
-      const e = document.createElement('div');
-      e.className = `day-event ${event.category}${event.completed ? ' completed' : ''}`;
-      const time = new Date(event.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      e.textContent = `${time} - ${event.title}`;
-      e.dataset.id = event.id;
-      e.onclick = ev => { ev.stopPropagation(); showTaskDetails(event.id); };
-      container.appendChild(e);
+    document.getElementById('today-btn').addEventListener('click', () => {
+        currentDate = new Date();
+        renderCalendar(currentDate);
     });
 
-    day.appendChild(container);
-  }
-  return day;
-}
+    // Category filter event listeners
+    document.getElementById('filter-homework').addEventListener('change', () => renderCalendar(currentDate));
+    document.getElementById('filter-assessment').addEventListener('change', () => renderCalendar(currentDate));
+    document.getElementById('filter-schedule').addEventListener('change', () => renderCalendar(currentDate));
 
-function getEventsForDay(tasksArr, date) {
-  const formattedDate = date.toISOString().slice(0, 10);
-  return tasksArr.filter(t => {
-    const due = typeof t.dueDate === 'string' ? t.dueDate.slice(0, 10) : new Date(t.dueDate).toISOString().slice(0, 10);
-    return due === formattedDate;
-  });
-}
-
-function showTaskDetails(taskId) {
-  const task = (JSON.parse(localStorage.getItem('student-hub-tasks')) || []).find(t => t.id === taskId);
-  if (!task) return;
-
-  document.getElementById('detail-task-title').textContent = task.title;
-  document.getElementById('detail-task-description').textContent = task.description || 'No description provided';
-
-  const category = document.getElementById('detail-task-category');
-  category.textContent = task.category;
-  category.className = `badge bg-${task.category === 'homework' ? 'info' : task.category === 'assessment' ? 'danger' : 'success'}`;
-
-  const priority = document.getElementById('detail-task-priority');
-  priority.textContent = `Priority: ${task.priority}`;
-  priority.className = `badge bg-${task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'success'}`;
-
-  const due = new Date(task.dueDate);
-  document.getElementById('detail-task-due-date').textContent = due.toLocaleDateString() + ' ' + due.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  document.getElementById('detail-task-completed').checked = task.completed;
-  document.getElementById('edit-task-btn').dataset.taskId = task.id;
-
-  new bootstrap.Modal(document.getElementById('taskDetailsModal')).show();
-}
-
-function navigateMonth(dir) {
-  const grid = document.getElementById('calendar-grid');
-  const clone = grid.cloneNode(true);
-  clone.classList.add('clone');
-  clone.style.transform = dir === 'prev' ? 'translateX(100%)' : 'translateX(-100%)';
-  grid.parentNode.appendChild(clone);
-
-  currentDate.setMonth(currentDate.getMonth() + (dir === 'prev' ? -1 : 1));
-  clone.offsetHeight;
-
-  grid.classList.add(dir === 'prev' ? 'slide-left-out' : 'slide-right-out');
-  clone.classList.add(dir === 'prev' ? 'slide-left-in' : 'slide-right-in');
-
-  setTimeout(() => {
-    clone.remove();
-    grid.classList.remove('slide-left-out', 'slide-right-out');
+    // Initial render
     renderCalendar(currentDate);
-  }, 300);
+
+    // Add event listener for edit task button in task details modal
+    document.getElementById('edit-task-btn').addEventListener('click', () => {
+        const taskId = document.getElementById('edit-task-btn').dataset.taskId;
+
+        // Close current modal
+        const detailsModal = bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal'));
+        detailsModal.hide();
+
+        // Open edit modal - need to wait for the first modal to close
+        setTimeout(() => {
+            openEditTaskModal(taskId);
+        }, 500);
+    });
 }
 
-function initWeekPreview() {
-  renderWeekPreview();
-}
+// Render the calendar for a specific month
+function renderCalendar(date) {
+    const calendarGrid = document.getElementById('calendar-grid');
+    const calendarTitle = document.getElementById('calendar-title');
 
-function renderWeekPreview() {
-  const weekPreview = document.getElementById('week-preview');
-  weekPreview.innerHTML = '';
-  const today = new Date();
-  const currentDay = today.getDay();
-  const firstDayOfWeek = new Date(today);
-  firstDayOfWeek.setDate(today.getDate() - ((currentDay + 6) % 7));
-  const tasksArr = tasks;
+    // Clear calendar grid
+    calendarGrid.innerHTML = '';
 
-  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  weekdays.forEach(day => {
-    const dayHeader = document.createElement('div');
-    dayHeader.classList.add('weekday');
-    dayHeader.textContent = day;
-    weekPreview.appendChild(dayHeader);
-  });
+    // Set calendar title
+    calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  for (let i = 0; i < 7; i++) {
-    const currentDate = new Date(firstDayOfWeek);
-    currentDate.setDate(firstDayOfWeek.getDate() + i);
-    const dayEvents = getEventsForDay(tasksArr, currentDate);
+    // Get first day of month
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
 
-    const dayElement = document.createElement('div');
-    dayElement.classList.add('day');
-    if (currentDate.toDateString() === today.toDateString()) dayElement.classList.add('today');
-    dayElement.textContent = currentDate.getDate();
-    if (dayEvents.length > 0) {
-      dayElement.classList.add('has-events');
-      if (dayEvents.some(e => e.category === 'assessment')) dayElement.classList.add('assessment');
-      else if (dayEvents.some(e => e.category === 'homework')) dayElement.classList.add('homework');
-      else if (dayEvents.some(e => e.category === 'schedule')) dayElement.classList.add('schedule');
-      dayElement.title = `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}`;
+    // Get day of week for first day (0-6, 0 = Sunday)
+    const firstDayOfWeek = firstDayOfMonth.getDay();
+
+    // Get last day of month
+    const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+
+    // Get current date for highlighting today
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === date.getMonth() && today.getFullYear() === date.getFullYear();
+
+    // Get previous month's days to display
+    const prevMonth = new Date(date.getFullYear(), date.getMonth(), 0);
+    const daysInPrevMonth = prevMonth.getDate();
+
+    // Get tasks from local storage
+    const tasks = JSON.parse(localStorage.getItem('student-hub-tasks')) || [];
+
+    // Get checked categories
+    const showHomework = document.getElementById('filter-homework').checked;
+    const showAssessment = document.getElementById('filter-assessment').checked;
+    const showSchedule = document.getElementById('filter-schedule').checked;
+
+    // Filter tasks by categories
+    const filteredTasks = tasks.filter(task => {
+        return (task.category === 'homework' && showHomework) ||
+               (task.category === 'assessment' && showAssessment) ||
+               (task.category === 'schedule' && showSchedule);
+    });
+
+    // Generate days for previous month (if needed)
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        const dayNumber = daysInPrevMonth - firstDayOfWeek + i + 1;
+        const dayDate = new Date(date.getFullYear(), date.getMonth() - 1, dayNumber);
+        
+        const dayEvents = getEventsForDay(filteredTasks, dayDate);
+        
+        const dayElement = createDayElement(dayNumber, dayDate, 'other-month', dayEvents);
+        calendarGrid.appendChild(dayElement);
     }
-    weekPreview.appendChild(dayElement);
-  }
+    
+    // Generate days for current month
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayDate = new Date(date.getFullYear(), date.getMonth(), i);
+        const isToday = isCurrentMonth && today.getDate() === i;
+        
+        const dayEvents = getEventsForDay(filteredTasks, dayDate);
+        
+        const dayElement = createDayElement(i, dayDate, isToday ? 'today' : '', dayEvents);
+        calendarGrid.appendChild(dayElement);
+    }
+    
+    // Calculate remaining cells to fill out the grid
+    const totalCellsGenerated = firstDayOfWeek + daysInMonth;
+    const remainingCells = 42 - totalCellsGenerated; // 6 rows of 7 days
+    
+    // Generate days for next month (if needed)
+    for (let i = 1; i <= remainingCells; i++) {
+        const dayDate = new Date(date.getFullYear(), date.getMonth() + 1, i);
+        
+        const dayEvents = getEventsForDay(filteredTasks, dayDate);
+        
+        const dayElement = createDayElement(i, dayDate, 'other-month', dayEvents);
+        calendarGrid.appendChild(dayElement);
+    }
+}
+
+// Create an element for a calendar day
+function createDayElement(dayNumber, date, extraClass = '', events = []) {
+    const dayElement = document.createElement('div');
+    dayElement.classList.add('calendar-day');
+    if (extraClass) {
+        dayElement.classList.add(extraClass);
+    }
+    
+    // Add date number
+    const dateElement = document.createElement('div');
+    dateElement.classList.add('date-number');
+    dateElement.textContent = dayNumber;
+    dayElement.appendChild(dateElement);
+    
+    // Add events
+    if (events.length > 0) {
+        const eventsContainer = document.createElement('div');
+        eventsContainer.classList.add('day-events');
+        
+        events.forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.classList.add('day-event', event.category);
+            if (event.completed) {
+                eventElement.classList.add('completed');
+            }
+            
+            // Format time
+            const eventTime = new Date(event.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            eventElement.textContent = `${eventTime} - ${event.title}`;
+            eventElement.dataset.id = event.id;
+            
+            eventElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showTaskDetails(event.id);
+            });
+            
+            eventsContainer.appendChild(eventElement);
+        });
+        
+        dayElement.appendChild(eventsContainer);
+    }
+    
+    return dayElement;
+}
+
+// Get events for a specific day
+function getEventsForDay(tasks, date) {
+    const formattedDate = date.toDateString();
+    
+    return tasks.filter(task => {
+        const taskDate = new Date(task.dueDate);
+        return taskDate.toDateString() === formattedDate;
+    });
+}
+
+// Show task details in a modal
+function showTaskDetails(taskId) {
+    const tasks = JSON.parse(localStorage.getItem('student-hub-tasks')) || [];
+    const task = tasks.find(t => t.id === taskId);
+    
+    if (!task) return;
+    
+    // Populate modal
+    document.getElementById('detail-task-title').textContent = task.title;
+    document.getElementById('detail-task-description').textContent = task.description || 'No description provided';
+    
+    // Set category badge
+    const categoryBadge = document.getElementById('detail-task-category');
+    categoryBadge.textContent = task.category;
+    categoryBadge.className = 'badge';
+    categoryBadge.classList.add(`bg-${task.category === 'homework' ? 'info' : task.category === 'assessment' ? 'danger' : 'success'}`);
+    
+    // Set priority badge
+    const priorityBadge = document.getElementById('detail-task-priority');
+    priorityBadge.textContent = `Priority: ${task.priority}`;
+    priorityBadge.className = 'badge';
+    priorityBadge.classList.add(`bg-${task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'success'}`);
+    
+    // Format due date
+    const dueDate = new Date(task.dueDate);
+    document.getElementById('detail-task-due-date').textContent = dueDate.toLocaleDateString() + ' ' + 
+        dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Set completion status
+    document.getElementById('detail-task-completed').checked = task.completed;
+    
+    // Set task ID for edit button
+    document.getElementById('edit-task-btn').dataset.taskId = task.id;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+    modal.show();
+}
+
+// Initialize week preview for dashboard
+function initWeekPreview() {
+    renderWeekPreview();
+}
+
+// Render the week preview calendar
+function renderWeekPreview() {
+    const weekPreview = document.getElementById('week-preview');
+    weekPreview.innerHTML = '';
+    
+    // Get current date
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Calculate first day of week (Sunday)
+    const firstDayOfWeek = new Date(today);
+    firstDayOfWeek.setDate(today.getDate() - currentDay);
+    
+    // Get tasks from local storage
+    const tasks = JSON.parse(localStorage.getItem('student-hub-tasks')) || [];
+    
+    // Add weekday headers
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    weekdays.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.classList.add('weekday');
+        dayHeader.textContent = day;
+        weekPreview.appendChild(dayHeader);
+    });
+    
+    // Add days
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(firstDayOfWeek);
+        currentDate.setDate(firstDayOfWeek.getDate() + i);
+        
+        const dayEvents = getEventsForDay(tasks, currentDate);
+        
+        const dayElement = document.createElement('div');
+        dayElement.classList.add('day');
+        if (currentDate.toDateString() === today.toDateString()) {
+            dayElement.classList.add('today');
+        }
+        
+        dayElement.textContent = currentDate.getDate();
+        
+        // Add indicator for events
+        if (dayEvents.length > 0) {
+            dayElement.classList.add('has-events');
+            
+            // Get the most important category for the indicator
+            if (dayEvents.some(e => e.category === 'assessment')) {
+                dayElement.classList.add('assessment');
+            } else if (dayEvents.some(e => e.category === 'homework')) {
+                dayElement.classList.add('homework');
+            } else if (dayEvents.some(e => e.category === 'schedule')) {
+                dayElement.classList.add('schedule');
+            }
+            
+            // Add tooltip with event count
+            dayElement.title = `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}`;
+        }
+        
+        weekPreview.appendChild(dayElement);
+    }
+}
+
+function navigateMonth(direction) {
+    const calendarGrid = document.getElementById('calendar-grid');
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    // Create a clone of the current calendar grid
+    const clone = calendarGrid.cloneNode(true);
+    clone.classList.add('clone');
+    
+    // Set initial position for the clone
+    clone.style.transform = direction === 'prev' ? 'translateX(100%)' : 'translateX(-100%)';
+    
+    // Add the clone to the container
+    calendarGrid.parentNode.appendChild(clone);
+    
+    // Update the date
+    if (direction === 'prev') {
+        currentDate.setMonth(currentMonth - 1);
+    } else {
+        currentDate.setMonth(currentMonth + 1);
+    }
+    
+    // Update the calendar title
+    // updateCalendarTitle(); // This function does not exist, can be removed if unnecessary
+
+    // Force a reflow
+    clone.offsetHeight;
+
+    // Add slide animation classes
+    calendarGrid.classList.add(direction === 'prev' ? 'slide-left-out' : 'slide-right-out');
+    clone.classList.add(direction === 'prev' ? 'slide-left-in' : 'slide-right-in');
+
+    // Wait for animation to complete
+    setTimeout(() => {
+        // Remove the clone and animation classes
+        clone.remove();
+        calendarGrid.classList.remove('slide-left-out', 'slide-right-out');
+        // Update calendar content
+        renderCalendar(currentDate); // Pass currentDate explicitly
+    }, 300);
 }

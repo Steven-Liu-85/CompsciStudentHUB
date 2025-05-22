@@ -214,17 +214,7 @@ body {
 }
 
 /* Remove the global animation override */
-* {
-    animation: none !important;
-}
 
-/* Remove the transition and transform overrides */
-.calendar-grid,
-.calendar-grid.clone {
-    animation: none !important;
-    transition: transform 0.3s ease-in-out !important;
-    transform: none !important;
-}
 
 .calendar-nav-row {
     gap: 16px; /* adjust as needed for perfect balance */
